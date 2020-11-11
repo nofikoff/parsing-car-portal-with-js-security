@@ -210,7 +210,7 @@ class carParser
                 );
                 return json_encode([
                     'error' => 1,
-                    'error_desc' => 'Dont see data NO COOKIES',
+                    'error_desc' => 'Dont see data NO COOKIES - catch BAN on 1-2 hours!',
                     'url' => $this->income_url,
                 ]);
 

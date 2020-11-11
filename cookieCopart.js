@@ -2,7 +2,10 @@
  * Подключим библиотеку puppeteer.
  */
 const puppeteer = require('puppeteer');
-if (typeof process.argv[2] == 'undefined') return "НЕ ВИЖУ ПАРАМЕТРЫ для файла cookieCompart.js";
+if (typeof process.argv[3] == 'undefined') {
+    console.log("Нет параметров", process.argv);
+    return "НЕ ВИЖУ ПАРАМЕТРЫ для файла cookieCompart.js";
+}
 
 const url = 'https://www.copart.com/public/data/lotdetails/solr/' + process.argv[2];
 
@@ -26,18 +29,27 @@ async function ssr() {
     });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36');
     await page.goto(url, {waitUntil: 'networkidle2'});
-    await page.waitFor(1000);
-    await page.screenshot({
-        path: `xxxxxxxxxxxxxxx.png`,
-        fullPage: true,
-    });
+    // для затаиться
+    //await page.waitFor(1000);
 
-// хватило и этой записи для куки одной исчтоник https://stackoverflow.com/questions/49389775/puppeteers-page-cookies-not-retrieving-all-cookies-shown-in-the-chrome-dev-to
-//var data = await page._client.send('Network.getAllCookies');
-// можно и так больше кукиес
-    var cookies = await page.cookies();
-//console.log(data, 'data');
-    console.log(JSON.stringify(cookies));
+    // для отлоадки
+    // await page.screenshot({
+    //     path: `xxxxxxxxxxxxxxx.png`,
+    //     fullPage: true,
+    // });
+
+
+    // хватило и этой записи для куки одной исчтоник https://stackoverflow.com/questions/49389775/puppeteers-page-cookies-not-retrieving-all-cookies-shown-in-the-chrome-dev-to
+    //var data = await page._client.send('Network.getAllCookies');
+    // можно и так больше кукиес
+    const cookies = await page.cookies();
+    const data = await page.evaluate(() => document.querySelector('*').outerHTML);
+    console.log(JSON.stringify(
+        {
+            'cookies': cookies,
+            'data': data
+        }
+    ));
     await browser.close();
 }
 

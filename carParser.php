@@ -52,6 +52,7 @@ class carParser
         $this->current_lot_id = $d[1];
         $all_requested_list_debug = [];
 
+
         // НЕ ВАЖНО ОТ ТОГО БЫЛИ ЛИ КУИКИ ЛИ НЕТ - ДЕЛАЕМ НУЛЕВОЙ ШАГ ИНИЦИИРУЕМ КУКИ или сразу получаем ответ еис они были
         // запос со старыми куками если они есть
         $this->current_json_responce = $this->send_http_request(
@@ -95,8 +96,36 @@ class carParser
         ) {
 
 
-            $this->nodeJsRequestGetCookies();
+            // возможно все хорошо и уже здесь есть ОТВЕТ !!!!!
+            // возможно все хорошо и уже здесь есть ОТВЕТ !!!!!
+            // возможно все хорошо и уже здесь есть ОТВЕТ !!!!!
+            $this->current_json_responce = $this->nodeJsRequestGetCookiesORData();
+            $json = json_decode($this->current_json_responce, true);
+            if (isset($json["data"]["lotDetails"])) {
 
+                $result = [
+                    'year' => $json["data"]["lotDetails"]["lcy"],
+                    'location' => $json["data"]["lotDetails"]["yn"],
+                    'branchSeller' => $json["data"]["lotDetails"]["scn"],
+                    'engine' => $json["data"]["lotDetails"]["egn"],
+                    'fuel' => $json["data"]["lotDetails"]["ft"],
+                    'error' => 0,
+                    'url' => $this->income_url,
+                ];
+
+                $this->logs('copart_good.txt',
+                    [
+                        'comment' => 'NODEJS обработчик сработал',
+                        'result' => $result,
+                        'current_cookies_file_content' => $this->cookies_parse_from_file(),
+                        'current_cookies_from_nodejs' => $this->current_cookies_from_nodejs,
+                        'responce' => $this->current_json_responce,
+                        'debug' => $all_requested_list_debug,
+                    ]
+                );
+                return json_encode($result);
+
+            }
 
             // только еслои куки имеют завтный ключ или два
             //#HttpOnly_www.copart.com	FALSE	/	TRUE	0	G2JSESSIONID	2A2E3C99BCD47187AA19A98A20EE1749-n2
@@ -106,6 +135,8 @@ class carParser
                 // ВСЕ НОРМ ПРОРВАЛИСЬ !!!!! G2JSESSIONID есть
                 // ВСЕ НОРМ ПРОРВАЛИСЬ !!!!! G2JSESSIONID есть
                 // ВСЕ НОРМ ПРОРВАЛИСЬ !!!!! G2JSESSIONID есть
+                //сбрасываем все куки
+                //unlink($this->file_cookies);
 
                 // запрос иньекцией новых кук
                 // делаем вторую попытку с новыми куками
@@ -137,13 +168,32 @@ class carParser
                 ];
 
 
-            } else {
+            }
+            else {
+
+
                 $all_requested_list_debug[] = [
-                    'name' => 'МЫ НЕ ПОЛУЧИЛИ nodeJS НУЖНУЮ  G2JSESSIONID КУКУ - СКОРЕЙ ВСЕГО НАС СЕЙЧАС ЗАБАНЯТ за этот запрос',
+                    'name' => 'СБРАСЫВАЕМ куки - МЫ НЕ ПОЛУЧИЛИ nodeJS НУЖНУЮ  G2JSESSIONID КУКУ - СКОРЕЙ ВСЕГО НАС СЕЙЧАС ЗАБАНЯТ за этот запрос',
                     'current_cookies_file_content' => $this->cookies_parse_from_file(),
                     'current_cookies_from_nodejs' => $this->current_cookies_from_nodejs,
                     'responce' => $this->current_json_responce
                 ];
+
+                //сбрасываем все куки
+                unlink($this->file_cookies);
+
+
+//                $this->nodeJsRequestGetCookies();
+//
+//                // только еслои куки имеют завтный ключ или два
+//                //#HttpOnly_www.copart.com	FALSE	/	TRUE	0	G2JSESSIONID	2A2E3C99BCD47187AA19A98A20EE1749-n2
+//                //#HttpOnly_.copart.com	TRUE	/	TRUE	1604949189	g2usersessionid	0b4f61da6613900ecce840bc5d774668
+//                if (strpos($this->current_cookies_from_nodejs, 'session')) {
+//
+//                    die ("!!!!!!!!!!!!!!!!!!!!!!!!!!! БИНГО ");
+//
+//                }
+
 
 // ОСТАНОВИТЕ МЕНЯ !
 // ОСТАНОВИТЕ МЕНЯ !
@@ -163,29 +213,10 @@ class carParser
                     'error_desc' => 'Dont see data NO COOKIES',
                     'url' => $this->income_url,
                 ]);
-//                $this->current_json_responce = $this->send_http_request(
-//                    "https://www.copart.com/public/data/lotdetails/solr/" . $this->current_lot_id,
-//                    "GET",
-//                    [
-//                        'authority: www.copart.com',
-//                        'pragma: no-cache',
-//                        'cache-control: no-cache',
-//                        'upgrade-insecure-requests: 1',
-//                        'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',
-//                        'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-//                        'sec-fetch-site: none',
-//                        'sec-fetch-mode: navigate',
-//                        'sec-fetch-user: ?1',
-//                        'sec-fetch-dest: document',
-//                        'accept-language: en,ru;q=0.9,uk;q=0.8',
-//                        // 'cookie: ' . $this->current_cookies_from_nodejs, // иньекция порции NODEJS кук !!!!!!!!!!!!!
-//                    ],
-//                    false // орати нимание этот же покси на NodeJS
-//                );
-
 
             }
         } // КОНЕЦ КОГДА НАС ПОСЛАЛИ!!!
+
         else {
             $all_requested_list_debug[] = [
                 'name' => 'ЗАТАИЛИСЬ - возможно куки плохие ?? НО ВОЗМОЖНО И РЕЗУЛЬТАТИ ПОЙМАЛИ',
@@ -210,6 +241,7 @@ class carParser
 
             $this->logs('copart_good.txt',
                 [
+                    'comment' => 'PHP обработчик сработал',
                     'result' => $result,
                     'current_cookies_file_content' => $this->cookies_parse_from_file(),
                     'current_cookies_from_nodejs' => $this->current_cookies_from_nodejs,
@@ -431,7 +463,7 @@ class carParser
     }
 
 
-    public function nodeJsRequestGetCookies()
+    public function nodeJsRequestGetCookiesORData()
     {
         //
         if ($_SERVER['HTTP_HOST'] === 'car-parse.loc') {
@@ -448,10 +480,20 @@ class carParser
             exec($nreq, $out, $err);
 
         }
+
+        //$out[0] - депрекейтет сообщение что то тап по паттитиру
+        $responce = json_decode($out[1], true);
+        //достаем и cookies и data
+
         //papyteear  $out[0]  - матюк о том что таймаут не поддержиается скооро в паттитире
-        foreach (json_decode($out[1], true) as $item) {
+        foreach ($responce['cookies'] as $item) {
             $this->current_cookies_from_nodejs .= $item['name'] . '=' . $item['value'] . "; ";
         }
+
+        // контент выводим JSON если это он конечно
+        preg_match('~>{(.*)}<~', $responce['data'], $d);
+        return "{" . $d[1] . "}";
+
     }
 }
 
